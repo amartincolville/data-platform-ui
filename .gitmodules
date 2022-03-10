@@ -1,0 +1,3 @@
+[submodule "de-conf"]
+	path = de-conf
+	url = git@github.com:StuartApp/de-conf.git

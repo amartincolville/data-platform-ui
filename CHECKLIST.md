@@ -1,0 +1,29 @@
+# Before first run
+- Create environment vars on Consul/Vault
+	- [ ] Beta/QA/Ephemerals
+	- [ ] Sandbox
+	- [ ] Prod
+- Terraform
+	- [ ] Target groups
+	- [ ] SecurityGroup
+	- [ ] IAM role
+	- [ ] Autoscaling Strategy (if exists)
+- Docker
+	- [ ] Syslog logs to level 0
+- Packer
+	- [ ] Remove legacy environment variables and tasks
+	- [ ] Look for valid AMIs (tag enabled=True)
+- Ansible (project)
+	- [ ] Remove legacy definitions and galaxy tasks
+- Ansible (infrastructure)
+	- [ ] Nagios checks for the service
+	- [ ] Create roles for consul/vault and update it with make sos-roles-<env>
+- Spinnaker
+	- [ ] Save pipeline definitions in the project repository
+	- [ ] Check for corner cases in deploy (ie if timeout, remove new ASG)
+	- [ ] Security groups are assigned in all environments
+	- [ ] IAM role is assigned in all environments
+	- [ ] Target groups are assigned in all environments
+	- [ ] Owners have access to the pipeline and permission to deploy/rollback
+- Communication
+	- [ ] Notify the changes in dev or team channel and add links to the documentation

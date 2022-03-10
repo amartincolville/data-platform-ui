@@ -1,0 +1,211 @@
+{
+ "application": "%%PROJECT_NAME%%",
+ "index": 0,
+ "isNew": true,
+ "keepWaitingPipelines": false,
+ "limitConcurrent": true,
+ "name": "Sandbox",
+ "notifications": [
+  {
+   "address": "%%NOTIFICATION_CHANNEL%%",
+   "level": "pipeline",
+   "message": {
+    "pipeline.complete": {
+     "text": "AWS deploy successful completed in *${parameters[\"STUART_ENV\"]}* of version *${ trigger['properties']['VERSION'] }*"
+    },
+    "pipeline.failed": {
+     "text": "AWS deploy has failed in *${parameters[\"STUART_ENV\"]}* of version *${ trigger['properties']['VERSION'] }*"
+    },
+    "pipeline.starting": {
+     "text": "Starting AWS deploy in *${parameters[\"STUART_ENV\"]}* of version *${ trigger['properties']['VERSION'] }*"
+    }
+   },
+   "type": "slack",
+   "when": [
+    "pipeline.starting",
+    "pipeline.complete",
+    "pipeline.failed"
+   ]
+  }
+ ],
+ "parameterConfig": [
+  {
+   "default": "sandbox",
+   "description": "",
+   "hasOptions": false,
+   "label": "Stuart Environment",
+   "name": "STUART_ENV",
+   "options": [
+    {
+     "value": ""
+    }
+   ],
+   "pinned": false,
+   "required": true
+  }
+ ],
+ "stages": [
+  {
+   "cloudProvider": "aws",
+   "cloudProviderType": "aws",
+   "isNew": true,
+   "name": "Find AMI image",
+   "packageName": "stuart/${ trigger['properties']['APP'] } ${ trigger['properties']['VERSION'] }",
+   "refId": "1",
+   "regions": [
+    "eu-west-1"
+   ],
+   "requisiteStageRefIds": [],
+   "tags": {
+    "Immutable": "true",
+    "Role": "${ trigger['properties']['ROLE'] }"
+   },
+   "type": "findImageFromTags"
+  },
+  {
+   "isNew": true,
+   "name": "Check Fast fail",
+   "preconditions": [
+    {
+     "context": {
+      "expression": "${ #stage('Deploy')['startTime'] } - ${ #stage( 'Deploy' )['endTime'] } \u003c 10"
+     },
+     "failPipeline": true,
+     "type": "expression"
+    },
+    {
+     "context": {
+      "expression": "#stage(\"Deploy\").status.toString() != \"SUCCEEDED\""
+     },
+     "failPipeline": false,
+     "type": "expression"
+    }
+   ],
+   "refId": "2",
+   "requisiteStageRefIds": [
+    "3"
+   ],
+   "type": "checkPreconditions"
+  },
+  {
+   "clusters": [
+    {
+     "account": "aws-deploy-account",
+     "application": "%%PROJECT_NAME%%",
+     "availabilityZones": {
+      "eu-west-1": [
+       "eu-west-1a",
+       "eu-west-1b",
+       "eu-west-1c"
+      ]
+     },
+     "capacity": {
+      "desired": 1,
+      "max": 1,
+      "min": 1
+     },
+     "cloudProvider": "aws",
+     "cooldown": "5",
+     "copySourceCustomBlockDeviceMappings": false,
+     "ebsOptimized": false,
+     "enabledMetrics": [],
+     "freeFormDetails": "",
+     "healthCheckGracePeriod": "300",
+     "healthCheckType": "ELB",
+     "iamRole": "%%PROJECT_NAME%%-${parameters[\"STUART_ENV\"]}",
+     "instanceMonitoring": false,
+     "instanceType": "t2.small",
+     "keyPair": "ubuntu",
+     "loadBalancers": [],
+     "moniker": {
+      "app": "%%PROJECT_NAME%%",
+      "detail": "",
+      "stack": "${parameters[\"STUART_ENV\"]}"
+     },
+     "provider": "aws",
+     "securityGroups": [
+      "sg-b601accf"
+     ],
+     "spotPrice": "",
+     "stack": "${parameters[\"STUART_ENV\"]}",
+     "strategy": "highlander",
+     "subnetType": "sandbox-private",
+     "suspendedProcesses": [],
+     "tags": {
+      "Environment": "${parameters[\"STUART_ENV\"]}",
+      "Name": "${ trigger['properties']['ROLE'] }-${parameters[\"STUART_ENV\"]}",
+      "Role": "${ trigger['properties']['ROLE'] }",
+      "Version": "${ trigger['properties']['VERSION'] }"
+     },
+     "targetGroups": [],
+     "targetHealthyDeployPercentage": 100,
+     "terminationPolicies": [
+      "Default"
+     ],
+     "useAmiBlockDeviceMappings": false
+    }
+   ],
+   "comments": "Deploy the AMI",
+   "completeOtherBranchesThenFail": false,
+   "continuePipeline": true,
+   "failPipeline": false,
+   "isNew": true,
+   "name": "Deploy",
+   "refId": "3",
+   "requisiteStageRefIds": [
+    "1"
+   ],
+   "stageTimeoutMs": 1800000,
+   "type": "deploy"
+  },
+  {
+   "cloudProvider": "aws",
+   "cloudProviderType": "aws",
+   "cluster": "%%PROJECT_NAME%%-${parameters[\"STUART_ENV\"]}",
+   "credentials": "aws-deploy-account",
+   "isNew": true,
+   "name": "Destroy Server Group",
+   "refId": "4",
+   "regions": [
+    "eu-west-1"
+   ],
+   "requisiteStageRefIds": [
+    "2"
+   ],
+   "stageEnabled": {
+    "expression": "#stage(\"Deploy\").status.toString() != \"SUCCEEDED\"",
+    "type": "expression"
+   },
+   "target": "current_asg_dynamic",
+   "type": "destroyServerGroup"
+  },
+  {
+   "isNew": true,
+   "name": "Check Preconditions",
+   "preconditions": [
+    {
+     "context": {
+      "expression": "#stage(\"Deploy\").status.toString() == \"SUCCEEDED\""
+     },
+     "failPipeline": true,
+     "type": "expression"
+    }
+   ],
+   "refId": "5",
+   "requisiteStageRefIds": [
+    "4"
+   ],
+   "type": "checkPreconditions"
+  }
+ ],
+ "triggers": [
+  {
+   "enabled": true,
+   "job": "",
+   "master": "StuartJenkins",
+   "propertyFile": "spinnaker.yml",
+   "runAsUser": "jenkins@stuart.com",
+   "type": "jenkins"
+  }
+ ]
+}

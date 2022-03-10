@@ -1,0 +1,40 @@
+---
+- name: Configure env file
+  hosts: all
+  become: true
+  vars:
+    consul_services:
+  tasks:
+    - name: Stub dockerapp_env
+      file:
+        state: touch
+        path: "/etc/dockerapp_env"
+    - name: Create full docker-compose.release.yml
+      template:
+        src: templates/docker-compose.release.yml.j2
+        dest: "{{compose_file_path}}"
+        mode: 0644
+    - name: Inject docker image name in DockerApp service
+      template:
+        src: templates/dockerapp.default.j2
+        dest: /etc/default/dockerapp
+        mode: 0640
+    - name: Enable DockerApp service at boot
+      service:
+        name: dockerapp
+        enabled: yes
+        state: stopped
+    - name: Enable immutable-bootstrap service at boot
+      service:
+        name: immutable-bootstrap
+        enabled: yes
+    - name: Add consul services
+      copy:
+        content: "{{ item.value | to_json }}"
+        dest: "/etc/consul/consul.d/{{item.key}}.json"
+      loop: "{{ consul_services | dict2items }}"
+    - name: Pull images
+      command: "/usr/local/bin/docker-compose -f {{compose_file_path}} pull"
+      environment:
+        IMAGE_NAME: "{{ docker_image }}"
+      tags: skip_ansible_lint

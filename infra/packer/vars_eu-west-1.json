@@ -1,0 +1,6 @@
+{
+  "aws_region": "eu-west-1",
+  "aws_vpc_id": "vpc-c2081da6",
+  "aws_subnet_id": "subnet-0b829f6f",
+  "aws_security_group_id": "sg-2468945d"
+}

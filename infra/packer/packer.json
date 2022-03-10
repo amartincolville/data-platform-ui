@@ -1,0 +1,72 @@
+{
+ "variables": {
+    "ami_disk_size": "20",
+    "aws_subnet_id": "{{env `AWS_SUBNET_ID`}}",
+    "aws_vpc_id": "{{env `AWS_VPC_ID`}}",
+    "aws_region": "{{env `AWS_REGION`}}",
+    "aws_ssh_username": "ubuntu",
+    "aws_instance_type": "t2.medium",
+    "aws_source_ami": "",
+    "aws_associate_public_ip_address": "true",
+    "aws_ena_support": "false",
+    "aws_spot_price": "0",
+    "aws_spot_price_auto_product": "",
+    "stuart_role": "{{env `ROLE`}}",
+    "docker_registry": "{{env `DOCKER_REGISTRY`}}",
+    "docker_image": "{{env `IMAGE_NAME`}}",
+    "commit_hash": "{{env `SHORT_COMMIT_HASH`}}"
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "region": "{{user `aws_region`}}",
+    "vpc_id": "{{user `aws_vpc_id`}}",
+    "subnet_id": "{{user `aws_subnet_id`}}",
+    "source_ami_filter": {
+      "filters": {
+        "virtualization-type": "hvm",
+        "root-device-type": "ebs",
+        "tag:Immutable": "true",
+        "tag:Release": "18.04",
+        "tag:Enabled": "true",
+        "tag:Name": "immutable_multienv_base"
+      },
+      "most_recent": true,
+      "owners": ["972122450800"]
+    },
+    "security_group_id": "{{user `aws_security_group_id`}}",
+    "instance_type": "{{user `aws_instance_type`}}",
+    "ssh_username": "{{user `aws_ssh_username`}}",
+    "ami_name": "stuart/{{user `stuart_role`}} {{user `commit_hash`}}",
+    "ami_users": [
+      "794172327517"
+    ],
+    "tags": {
+      "OS_Version": "Ubuntu",
+      "Release": "18.04",
+      "Architecture": "x64",
+      "Name": "{{user `stuart_role`}}_immutable",
+      "Timestamp": "{{timestamp}}",
+      "Role": "{{user `stuart_role`}}",
+      "Immutable": "true",
+      "CommitHash": "{{user `commit_hash`}}"
+    },
+    "launch_block_device_mappings": [ {
+        "device_name": "/dev/sda1",
+        "volume_size": "{{ user `ami_disk_size`}}",
+        "delete_on_termination": true
+    } ]
+  }],
+  "provisioners": [
+    {
+      "type": "ansible",
+      "playbook_file": "infra/ansible/playbook.yml",
+      "ansible_env_vars": [
+          "ANSIBLE_CONFIG=infra/ansible/ansible.cfg"
+      ],
+      "user": "{{user `aws_ssh_username`}}",
+      "extra_arguments": [
+        "-e", "dockerapp_verbose=true compose_file_path=/home/{{user `aws_ssh_username`}}/docker-compose.release.yml docker_image={{user `docker_image`}} stuart_role={{user `stuart_role`}}"
+      ]
+    }
+  ]
+}

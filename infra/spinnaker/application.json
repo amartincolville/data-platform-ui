@@ -1,0 +1,27 @@
+{
+ "cloudProviders": "aws",
+ "description": "",
+ "email": "systems@stuart.com",
+ "instancePort": 80,
+ "name": "%%PROJECT_NAME%%",
+ "providerSettings": {
+  "aws": {
+   "useAmiBlockDeviceMappings": false
+  }
+ },
+  "permissions": {
+  "EXECUTE": [
+   "sysadmins",
+   "jenkins@stuart.com"
+  ],
+  "READ": [
+   "sysadmins",
+   "jenkins@stuart.com"
+  ],
+  "WRITE": [
+   "sysadmins",
+   "jenkins@stuart.com"
+  ]
+ },
+ "trafficGuards": []
+}
